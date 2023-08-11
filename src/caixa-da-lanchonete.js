@@ -64,27 +64,23 @@ class CaixaDaLanchonete {
 					if (i === pedidos_anteriores.length - 1) {
 						for (const item_cardapio_nome in CARDAPIO) {
 							const item_cardapio = CARDAPIO[item_cardapio_nome];
-							console.log(item_cardapio);
 							if (
 								Object.keys(item_cardapio?.extras ?? {}).includes(nome_item)
 							) {
 								return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 							}
 						}
+						console.log('AAA');
 						return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
 					}
 				}
-			}
-
-			if (extra_inexistente) {
-				return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 			}
 
 			this.#total +=
 				(CARDAPIO[nome_item]?.valor ??
 					item_principal_extra?.extras[nome_item]?.valor) * qnt_item;
 
-			this.#qnt_itens += qnt_item;
+			this.#qnt_itens = this.qnt_itens + qnt_item;
 		}
 
 		switch (metodoPagamento) {
