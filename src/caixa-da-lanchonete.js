@@ -25,6 +25,11 @@ class CaixaDaLanchonete {
 
 	calcularValorDaCompra(metodoDePagamento, itens) {
 		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
+		const carrinhoVazio = itens.length === 0;
+
+		if (carrinhoVazio) {
+			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
+		}
 
 		if (metodoPagamento === null) {
 			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
@@ -33,14 +38,22 @@ class CaixaDaLanchonete {
 		for (let i = 0; i < itens.length; i++) {
 			const item = itens[i];
 			const itemData = item.split(',');
+			if (itemData.length < 2 || itemData.length > 2) {
+				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
+			}
 			const nome_item = itemData[0];
-			const qnt_item = itemData[1];
-			const item_vazio = qnt_item === 0;
+			const qnt_item = Number(itemData[1]) ?? 0;
+			const zero_item = qnt_item === 0;
+			if (zero_item) {
+				return MENSAGENS_DE_ERRO.ZERO_ITENS;
+			}
 			const cod_inexistente = !Object.keys(CARDAPIO).includes(nome_item);
-			let extra_inexistente = null;
+			let extra_inexistente = false;
 			let item_principal_extra = null;
+			const pedidos_anteriores = itens.slice(0, i + 1);
 			if (cod_inexistente) {
-				for (const pedido of itens.slice(0, i + 1)) {
+				for (let i = 0; i < pedidos_anteriores.length; i++) {
+					const pedido = pedidos_anteriores[i];
 					const pedidoData = pedido.split(',');
 					const extras = CARDAPIO[pedidoData[0]]?.extras ?? {};
 					extra_inexistente = !Object.keys(extras).includes(nome_item);
@@ -48,27 +61,30 @@ class CaixaDaLanchonete {
 						item_principal_extra = CARDAPIO[pedidoData[0]];
 						break;
 					}
+					if (i === pedidos_anteriores.length - 1) {
+						for (const item_cardapio_nome in CARDAPIO) {
+							const item_cardapio = CARDAPIO[item_cardapio_nome];
+							console.log(item_cardapio);
+							if (
+								Object.keys(item_cardapio?.extras ?? {}).includes(nome_item)
+							) {
+								return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
+							}
+						}
+						return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
+					}
 				}
 			}
 
-			if (cod_inexistente && extra_inexistente) {
-				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
-			} else if (extra_inexistente) {
+			if (extra_inexistente) {
 				return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
-			} else if (item_vazio) {
-				return MENSAGENS_DE_ERRO.ZERO_ITENS;
 			}
 
 			this.#total +=
 				(CARDAPIO[nome_item]?.valor ??
 					item_principal_extra?.extras[nome_item]?.valor) * qnt_item;
 
-			this.#qnt_itens += Number(qnt_item);
-		}
-
-		const carrinhoVazio = this.#qnt_itens === 0;
-		if (carrinhoVazio) {
-			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
+			this.#qnt_itens += qnt_item;
 		}
 
 		switch (metodoPagamento) {
@@ -80,13 +96,12 @@ class CaixaDaLanchonete {
 				break;
 		}
 
-		return `R$ ${this.total
-			.toPrecision(4)
-			.toLocaleString('pt-BR', {
-				maximumFractionDigits: 2,
-				minimumFractionDigits: 2,
-			})
-			.replace('.', ',')}`;
+		return `${Number(this.total.toPrecision(4)).toLocaleString('pt-BR', {
+			style: 'currency',
+			currency: 'BRL',
+			// maximumFractionDigits: 2,
+			// minimumFractionDigits: 2,
+		})}`;
 	}
 }
 
