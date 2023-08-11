@@ -1,7 +1,7 @@
 const CARDAPIO = Object.freeze({
 	cafe: {
 		descricao: 'Café',
-		valor: 3,
+		valor: 3.0,
 		extras: {
 			chantily: {
 				descricao: 'Chantily (extra do Café)',
