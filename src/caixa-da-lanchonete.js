@@ -12,6 +12,10 @@ const MENSAGENS_DE_ERRO = Object.freeze({
 });
 
 class CaixaDaLanchonete {
+	#total = 0;
+	get total() {
+		return this.#total;
+	}
 	calcularValorDaCompra(metodoDePagamento, itens) {
 		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento];
 
@@ -19,6 +23,7 @@ class CaixaDaLanchonete {
 			return;
 		}
 		// calcularValorDaCompra(string[debito, credito, dinheiro], itens[array[string[cod,qnt]]])
+		return `R$ ${this.total}`;
 	}
 }
 
