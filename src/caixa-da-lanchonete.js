@@ -12,11 +12,11 @@ const MENSAGENS_DE_ERRO = Object.freeze({
 });
 
 class CaixaDaLanchonete {
-	#qnt_itens = 0;
+	#quantidadeDeItensNoCaixa = 0;
 	#total = 0;
 
-	get qnt_itens() {
-		return this.#qnt_itens;
+	get quantidadeDeItensNoCaixa() {
+		return this.#quantidadeDeItensNoCaixa;
 	}
 
 	get total() {
@@ -24,63 +24,72 @@ class CaixaDaLanchonete {
 	}
 
 	calcularValorDaCompra(metodoDePagamento, itens) {
-		const carrinhoVazio = itens.length === 0;
-		if (carrinhoVazio) {
+		const isCarrinhoVazio = itens.length === 0;
+		if (isCarrinhoVazio) {
 			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
 		}
 
 		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
-		if (metodoPagamento === null) {
+		const isPagamentoInvalido = metodoPagamento === null;
+		if (isPagamentoInvalido) {
 			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
 		}
 
 		for (let i = 0; i < itens.length; i++) {
 			const item = itens[i];
 			const itemData = item.split(',');
-			if (itemData.length < 2 || itemData.length > 2) {
+			const isDadosInvalidos = itemData.length < 2 || itemData.length > 2;
+			if (isDadosInvalidos) {
 				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
 			}
-			const nome_item = itemData[0];
-			const qnt_item = Number(itemData[1]) ?? 0;
-			const zero_item = qnt_item === 0;
-			if (zero_item) {
+			const nomeItem = itemData[0];
+			const quantidadeItem = Number(itemData[1]) ?? 0;
+			const isZeroItem = quantidadeItem === 0;
+			if (isZeroItem) {
 				return MENSAGENS_DE_ERRO.ZERO_ITENS;
 			}
-			const cod_inexistente = !Object.keys(CARDAPIO).includes(nome_item);
-			let extra_inexistente = false;
-			let item_principal_extra = null;
-			const pedidos_anteriores = itens.slice(0, i + 1);
-			if (cod_inexistente) {
-				for (let i = 0; i < pedidos_anteriores.length; i++) {
-					const pedido = pedidos_anteriores[i];
-					const pedidoData = pedido.split(',');
-					const extras = CARDAPIO[pedidoData[0]]?.extras ?? {};
-					extra_inexistente = !Object.keys(extras).includes(nome_item);
-					if (extra_inexistente === false) {
-						item_principal_extra = CARDAPIO[pedidoData[0]];
+
+			const isCodigoInexistente = !Object.keys(CARDAPIO).includes(nomeItem);
+
+			let isExtraExistente = false;
+			let itemPrincipalDoExtra = null;
+			const colecaoPedidosAnteriores = itens.slice(0, i + 1);
+			if (isCodigoInexistente) {
+				for (let j = 0; j < colecaoPedidosAnteriores.length; j++) {
+					const itemAnterior = colecaoPedidosAnteriores[j];
+					const itemAnteriorData = itemAnterior.split(',');
+					const extrasDoItemAnterior =
+						CARDAPIO[itemAnteriorData[0]]?.extras ?? {};
+					isExtraExistente =
+						Object.keys(extrasDoItemAnterior).includes(nomeItem);
+					if (isExtraExistente) {
+						itemPrincipalDoExtra = CARDAPIO[itemAnteriorData[0]];
 						break;
 					}
-					if (i === pedidos_anteriores.length - 1) {
+
+					const ultimoItemPedidoDaColecao =
+						j === colecaoPedidosAnteriores.length - 1;
+					if (ultimoItemPedidoDaColecao) {
 						for (const item_cardapio_nome in CARDAPIO) {
-							const item_cardapio = CARDAPIO[item_cardapio_nome];
-							if (
-								Object.keys(item_cardapio?.extras ?? {}).includes(nome_item)
-							) {
+							const itemDoCardapio = CARDAPIO[item_cardapio_nome];
+							const extrasDoItemDoCardapio = Object.keys(
+								itemDoCardapio?.extras ?? {}
+							);
+							if (extrasDoItemDoCardapio.includes(nomeItem)) {
 								return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 							}
 						}
-						console.log('AAA');
 						return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
 					}
 				}
 			}
 
 			const valor_do_item =
-				CARDAPIO[nome_item]?.valor ??
-				item_principal_extra?.extras[nome_item]?.valor;
+				CARDAPIO[nomeItem]?.valor ??
+				itemPrincipalDoExtra?.extras[nomeItem]?.valor;
 
-			this.#total += this.calculaTotalDoItem(valor_do_item, qnt_item);
-			this.#qnt_itens += qnt_item;
+			this.#total += this.calculaTotalDoItem(valor_do_item, quantidadeItem);
+			this.#quantidadeDeItensNoCaixa += quantidadeItem;
 		}
 		this.computaTaxasEDescontos(metodoPagamento);
 		return this.converteValorEmMoeda(this.#total, 'BRL');
