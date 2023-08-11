@@ -17,10 +17,10 @@ class CaixaDaLanchonete {
 		return this.#total;
 	}
 	calcularValorDaCompra(metodoDePagamento, itens) {
-		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento];
+		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
 
-		if (metodoDePagamento === null) {
-			return;
+		if (metodoPagamento === null) {
+			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
 		}
 		// calcularValorDaCompra(string[debito, credito, dinheiro], itens[array[string[cod,qnt]]])
 		return `R$ ${this.total}`;
