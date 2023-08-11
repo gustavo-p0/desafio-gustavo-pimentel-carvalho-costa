@@ -12,17 +12,55 @@ const MENSAGENS_DE_ERRO = Object.freeze({
 });
 
 class CaixaDaLanchonete {
+	#qnt_itens = 0;
 	#total = 0;
+
+	get qnt_itens() {
+		return this.#qnt_itens;
+	}
+
 	get total() {
 		return this.#total;
 	}
+
 	calcularValorDaCompra(metodoDePagamento, itens) {
 		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
 
 		if (metodoPagamento === null) {
 			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
 		}
-		// calcularValorDaCompra(string[debito, credito, dinheiro], itens[array[string[cod,qnt]]])
+
+		for (let i = 0; i < itens.length; i++) {
+			const item = itens[i];
+			const itemData = item.split(',');
+			const nome_item = itemData[0];
+			const qnt_item = itemData[1];
+			const item_vazio = qnt_item === 0;
+			const cod_inexistente = !Object.keys(itens).includes(nome_item);
+			let extra_inexistente = false;
+			for (const pedido of itens.slice(0, i + 1)) {
+				const pedidoData = pedido.split(',');
+				const extras = CARDAPIO[pedidoData[0]]?.extras ?? {};
+				extra_inexistente = !Object.keys(extras).includes(nome_item);
+			}
+
+			if (extra_inexistente) {
+				return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
+			} else if (cod_inexistente) {
+				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
+			} else if (item_vazio) {
+				return MENSAGENS_DE_ERRO.ZERO_ITENS;
+			}
+
+			this.#total += CARDAPIO[nome_item];
+			this.#qnt_itens += Number(qnt_item);
+		}
+
+		const carrinhoVazio = this.#qnt_itens === 0;
+		if (carrinhoVazio) {
+			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
+		}
+
 		return `R$ ${this.total}`;
 	}
 }
