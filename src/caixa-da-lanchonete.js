@@ -37,22 +37,31 @@ class CaixaDaLanchonete {
 			const qnt_item = itemData[1];
 			const item_vazio = qnt_item === 0;
 			const cod_inexistente = !Object.keys(CARDAPIO).includes(nome_item);
-
+			let extra_inexistente = null;
+			let item_principal_extra = null;
 			if (cod_inexistente) {
 				for (const pedido of itens.slice(0, i + 1)) {
 					const pedidoData = pedido.split(',');
 					const extras = CARDAPIO[pedidoData[0]]?.extras ?? {};
-					const extra_inexistente = !Object.keys(extras).includes(nome_item);
-					if (extra_inexistente) {
-						return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
+					extra_inexistente = !Object.keys(extras).includes(nome_item);
+					if (extra_inexistente === false) {
+						item_principal_extra = CARDAPIO[pedidoData[0]];
+						break;
 					}
 				}
+			}
+
+			if (cod_inexistente && extra_inexistente) {
 				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
+			} else if (extra_inexistente) {
+				return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 			} else if (item_vazio) {
 				return MENSAGENS_DE_ERRO.ZERO_ITENS;
 			}
 
-			this.#total += CARDAPIO[nome_item].valor;
+			this.#total +=
+				(CARDAPIO[nome_item]?.valor ??
+					item_principal_extra?.extras[nome_item]?.valor) * qnt_item;
 
 			this.#qnt_itens += Number(qnt_item);
 		}
@@ -71,10 +80,13 @@ class CaixaDaLanchonete {
 				break;
 		}
 
-		return `R$ ${this.total.toLocaleString('pt-BR', {
-			maximumFractionDigits: 2,
-			minimumFractionDigits: 2,
-		})}`;
+		return `R$ ${this.total
+			.toPrecision(4)
+			.toLocaleString('pt-BR', {
+				maximumFractionDigits: 2,
+				minimumFractionDigits: 2,
+			})
+			.replace('.', ',')}`;
 	}
 }
 
