@@ -82,12 +82,7 @@ class CaixaDaLanchonete {
 			this.#qnt_itens = this.qnt_itens + qnt_item;
 		}
 		this.computaTaxasEDescontos(metodoPagamento);
-		return `${Number(this.total.toPrecision(4)).toLocaleString('pt-BR', {
-			style: 'currency',
-			currency: 'BRL',
-			// maximumFractionDigits: 2,
-			// minimumFractionDigits: 2,
-		})}`;
+		return this.converteValorEmMoeda(this.#total, 'BRL');
 	}
 
 	computaTaxasEDescontos(metodoPagamento) {
@@ -99,6 +94,13 @@ class CaixaDaLanchonete {
 				this.#total = this.#total * (1 - DESCONTOS[metodoPagamento]);
 				break;
 		}
+	}
+
+	converteValorEmMoeda(total, currency) {
+		return Number(total.toPrecision(4)).toLocaleString('pt-BR', {
+			style: 'currency',
+			currency: `${currency}`,
+		});
 	}
 }
 
