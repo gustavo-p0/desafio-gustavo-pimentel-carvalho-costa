@@ -24,13 +24,12 @@ class CaixaDaLanchonete {
 	}
 
 	calcularValorDaCompra(metodoDePagamento, itens) {
-		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
 		const carrinhoVazio = itens.length === 0;
-
 		if (carrinhoVazio) {
 			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
 		}
 
+		const metodoPagamento = FORMAS_DE_PAGAMENTO[metodoDePagamento] ?? null;
 		if (metodoPagamento === null) {
 			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
 		}
@@ -82,22 +81,24 @@ class CaixaDaLanchonete {
 
 			this.#qnt_itens = this.qnt_itens + qnt_item;
 		}
-
-		switch (metodoPagamento) {
-			case 'credito':
-				this.#total = this.#total * (1 + TAXAS[metodoDePagamento]);
-				break;
-			case 'dinheiro':
-				this.#total = this.#total * (1 - DESCONTOS[metodoPagamento]);
-				break;
-		}
-
+		this.computaTaxasEDescontos(metodoPagamento);
 		return `${Number(this.total.toPrecision(4)).toLocaleString('pt-BR', {
 			style: 'currency',
 			currency: 'BRL',
 			// maximumFractionDigits: 2,
 			// minimumFractionDigits: 2,
 		})}`;
+	}
+
+	computaTaxasEDescontos(metodoPagamento) {
+		switch (metodoPagamento) {
+			case FORMAS_DE_PAGAMENTO.credito:
+				this.#total = this.#total * (1 + TAXAS[metodoPagamento]);
+				break;
+			case FORMAS_DE_PAGAMENTO.dinheiro:
+				this.#total = this.#total * (1 - DESCONTOS[metodoPagamento]);
+				break;
+		}
 	}
 }
 
