@@ -75,11 +75,12 @@ class CaixaDaLanchonete {
 				}
 			}
 
-			this.#total +=
-				(CARDAPIO[nome_item]?.valor ??
-					item_principal_extra?.extras[nome_item]?.valor) * qnt_item;
+			const valor_do_item =
+				CARDAPIO[nome_item]?.valor ??
+				item_principal_extra?.extras[nome_item]?.valor;
 
-			this.#qnt_itens = this.qnt_itens + qnt_item;
+			this.#total += this.calculaTotalDoItem(valor_do_item, qnt_item);
+			this.#qnt_itens += qnt_item;
 		}
 		this.computaTaxasEDescontos(metodoPagamento);
 		return this.converteValorEmMoeda(this.#total, 'BRL');
@@ -96,6 +97,10 @@ class CaixaDaLanchonete {
 		}
 	}
 
+	calculaTotalDoItem(valor, quantidade) {
+		return valor * quantidade;
+	}
+
 	converteValorEmMoeda(total, currency) {
 		return Number(total.toPrecision(4)).toLocaleString('pt-BR', {
 			style: 'currency',
@@ -105,12 +110,3 @@ class CaixaDaLanchonete {
 }
 
 export { CaixaDaLanchonete };
-
-// Atualmente a Lanchonete aceita as seguintes formas de pagamento:
-
-// dinheiro
-// debito
-// credito
-// O sistema deve receber essa informação como string, utilizando a grafia exatamente igual aos exemplos acima.
-
-//  Você pode desenvolver a sua lógica criando outros arquivos, métodos e até mesmo outras classes, porém o resultado deve poder ser obtido através do método calcularValorDaCompra.
