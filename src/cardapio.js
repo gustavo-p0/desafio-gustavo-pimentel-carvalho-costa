@@ -1,13 +1,7 @@
-const CARDAPIO = Object.freeze({
+export const CARDAPIO = Object.freeze({
 	cafe: {
 		descricao: 'Café',
 		valor: 3.0,
-		extras: {
-			chantily: {
-				descricao: 'Chantily (extra do Café)',
-				valor: 1.5,
-			},
-		},
 	},
 	suco: {
 		descricao: 'Suco Natural',
@@ -16,12 +10,6 @@ const CARDAPIO = Object.freeze({
 	sanduiche: {
 		descricao: 'Sanduíche',
 		valor: 6.5,
-		extras: {
-			queijo: {
-				descricao: 'Queijo (extra do Sanduíche)',
-				valor: 2,
-			},
-		},
 	},
 	salgado: {
 		descricao: 'Salgado',
@@ -37,4 +25,15 @@ const CARDAPIO = Object.freeze({
 	},
 });
 
-export default CARDAPIO;
+export const EXTRAS = Object.freeze({
+	chantily: {
+		itemPrincipal: 'cafe',
+		descricao: 'Chantily (extra do Café)',
+		valor: 1.5,
+	},
+	queijo: {
+		itemPrincipal: 'sanduiche',
+		descricao: 'Queijo (extra do Sanduíche)',
+		valor: 2,
+	},
+});
