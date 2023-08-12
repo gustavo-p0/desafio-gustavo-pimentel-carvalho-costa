@@ -1,31 +1,24 @@
-import CARDAPIO from './cardapio';
+import { CARDAPIO, EXTRAS } from './cardapio';
 import TAXAS from './taxas';
 import DESCONTOS from './descontos';
 import FORMAS_DE_PAGAMENTO from './formas-de-pagamento';
-
-const MENSAGENS_DE_ERRO = Object.freeze({
-	ITEM_PRINCIPAL_INEXISTENTE: 'Item extra não pode ser pedido sem o principal',
-	CARRINHO_VAZIO: 'Não há itens no carrinho de compra!',
-	ZERO_ITENS: 'Quantidade inválida!',
-	CODIGO_INEXISTENTE: 'Item inválido!',
-	FORMAS_DE_PAGAMENTO_INEXISTENTE: 'Forma de pagamento inválida!',
-});
+import MENSAGENS_DE_ERRO from './mensagens';
 
 class CaixaDaLanchonete {
-	#quantidadeDeItensNoCaixa = 0;
 	#total = 0;
 
-	get quantidadeDeItensNoCaixa() {
-		return this.#quantidadeDeItensNoCaixa;
+	set total(valor) {
+		this.#total += valor;
 	}
-
 	get total() {
 		return this.#total;
 	}
 
 	calcularValorDaCompra(metodoDePagamento, itens) {
-		const isCarrinhoVazio = itens.length === 0;
-		if (isCarrinhoVazio) {
+		const itensPrincipais = new Map();
+		const itensExtras = new Map();
+		const isSacolaVazia = itens.length === 0;
+		if (isSacolaVazia) {
 			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
 		}
 
@@ -35,64 +28,41 @@ class CaixaDaLanchonete {
 			return MENSAGENS_DE_ERRO.FORMAS_DE_PAGAMENTO_INEXISTENTE;
 		}
 
-		for (let i = 0; i < itens.length; i++) {
-			const item = itens[i];
-			const itemData = item.split(',');
-			const isDadosInvalidos = itemData.length < 2 || itemData.length > 2;
-			if (isDadosInvalidos) {
+		for (let item of itens) {
+			const [nomeItem = null, qntItem = null] = item.split(',');
+			if (CARDAPIO[nomeItem]) {
+				itensPrincipais.set(nomeItem, +qntItem);
+			} else if (EXTRAS[nomeItem]) {
+				const itemAssociado = EXTRAS[nomeItem].itemPrincipal;
+				if (itensPrincipais.has(itemAssociado)) {
+					itensExtras.set(nomeItem, +qntItem);
+				} else {
+					console.log(nomeItem, itemAssociado, EXTRAS[nomeItem]);
+					return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
+				}
+			} else {
 				return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
 			}
-			const nomeItem = itemData[0];
-			const quantidadeItem = Number(itemData[1]) ?? 0;
-			const isZeroItem = quantidadeItem === 0;
-			if (isZeroItem) {
+
+			if (qntItem === '0' || qntItem === null) {
 				return MENSAGENS_DE_ERRO.ZERO_ITENS;
 			}
-
-			const isCodigoInexistente = !Object.keys(CARDAPIO).includes(nomeItem);
-
-			let isExtraExistente = false;
-			let itemPrincipalDoExtra = null;
-			const colecaoPedidosAnteriores = itens.slice(0, i + 1);
-			if (isCodigoInexistente) {
-				for (let j = 0; j < colecaoPedidosAnteriores.length; j++) {
-					const itemAnterior = colecaoPedidosAnteriores[j];
-					const itemAnteriorData = itemAnterior.split(',');
-					const extrasDoItemAnterior =
-						CARDAPIO[itemAnteriorData[0]]?.extras ?? {};
-					isExtraExistente =
-						Object.keys(extrasDoItemAnterior).includes(nomeItem);
-					if (isExtraExistente) {
-						itemPrincipalDoExtra = CARDAPIO[itemAnteriorData[0]];
-						break;
-					}
-
-					const ultimoItemPedidoDaColecao =
-						j === colecaoPedidosAnteriores.length - 1;
-					if (ultimoItemPedidoDaColecao) {
-						for (const item_cardapio_nome in CARDAPIO) {
-							const itemDoCardapio = CARDAPIO[item_cardapio_nome];
-							const extrasDoItemDoCardapio = Object.keys(
-								itemDoCardapio?.extras ?? {}
-							);
-							if (extrasDoItemDoCardapio.includes(nomeItem)) {
-								return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
-							}
-						}
-						return MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE;
-					}
-				}
-			}
-
-			const valor_do_item =
-				CARDAPIO[nomeItem]?.valor ??
-				itemPrincipalDoExtra?.extras[nomeItem]?.valor;
-
-			this.#total += this.calculaTotalDoItem(valor_do_item, quantidadeItem);
-			this.#quantidadeDeItensNoCaixa += quantidadeItem;
 		}
+
+		this.somaValores(itensPrincipais, itensExtras);
 		this.computaTaxasEDescontos(metodoPagamento);
-		return this.converteValorEmMoeda(this.#total, 'BRL');
+		return this.converteValorTotalEmMoeda('BRL');
+	}
+
+	somaValores(itensPrincipais, itensExtras) {
+		itensPrincipais.forEach((qntItem, nomeItem) => {
+			const valor = +CARDAPIO[nomeItem].valor;
+			this.#total += Number(valor * qntItem);
+		});
+		itensExtras.forEach((qntItem, nomeItem) => {
+			const valor = +EXTRAS[nomeItem].valor;
+			this.#total += Number(valor * qntItem);
+		});
 	}
 
 	computaTaxasEDescontos(metodoPagamento) {
@@ -106,12 +76,8 @@ class CaixaDaLanchonete {
 		}
 	}
 
-	calculaTotalDoItem(valor, quantidade) {
-		return valor * quantidade;
-	}
-
-	converteValorEmMoeda(total, currency) {
-		return Number(total.toPrecision(4)).toLocaleString('pt-BR', {
+	converteValorTotalEmMoeda(currency) {
+		return Number(this.#total.toPrecision(4)).toLocaleString('pt-BR', {
 			style: 'currency',
 			currency: `${currency}`,
 		});
