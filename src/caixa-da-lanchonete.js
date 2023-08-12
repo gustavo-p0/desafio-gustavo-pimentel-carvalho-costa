@@ -7,8 +7,7 @@ import MENSAGENS_DE_ERRO from './mensagens';
 class CaixaDaLanchonete {
 	calcularValorDaCompra(metodoDePagamento, itens) {
 		let total = 0;
-		let itensPrincipais = new Map();
-		let itensExtras = new Map();
+		let pedidos = new Map();
 
 		const isSacolaVazia = itens.length === 0;
 		if (isSacolaVazia) {
@@ -26,13 +25,20 @@ class CaixaDaLanchonete {
 			const isItemPrincipal = CARDAPIO[nomeItem];
 			const isItemExtra = EXTRAS[nomeItem];
 			if (isItemPrincipal) {
-				itensPrincipais.set(nomeItem, +qntItem);
+				if (pedidos.has(nomeItem)) {
+					pedidos.set(nomeItem, pedidos.get(nomeItem) + +qntItem);
+				} else {
+					pedidos.set(nomeItem, +qntItem);
+				}
 			} else if (isItemExtra) {
 				const itemAssociadoAoExtra = EXTRAS[nomeItem].itemPrincipal;
-				const isItemAssociadoJaPedido =
-					itensPrincipais.has(itemAssociadoAoExtra);
+				const isItemAssociadoJaPedido = pedidos.has(itemAssociadoAoExtra);
 				if (isItemAssociadoJaPedido) {
-					itensExtras.set(nomeItem, +qntItem);
+					if (pedidos.has(nomeItem)) {
+						pedidos.set(nomeItem, pedidos.get(nomeItem) + +qntItem);
+					} else {
+						pedidos.set(nomeItem, +qntItem);
+					}
 				} else {
 					return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 				}
@@ -45,26 +51,23 @@ class CaixaDaLanchonete {
 			}
 		}
 
-		[total, itensPrincipais, itensExtras] = this.somaValores(
-			itensPrincipais,
-			itensExtras
-		);
+		total = this.somaValores(pedidos);
 		total = this.computaTaxasEDescontos(total, metodoPagamento);
 		return this.converteValorTotalEmMoeda(total, 'BRL');
 	}
 
-	somaValores(itensPrincipais, itensExtras) {
+	somaValores(pedidos) {
 		let total = 0;
-		itensPrincipais.forEach((qntItem, nomeItem) => {
-			const valor = +CARDAPIO[nomeItem].valor;
+		pedidos.forEach((qntItem, nomeItem) => {
+			let valor = null;
+			if (CARDAPIO[nomeItem]) {
+				valor = +CARDAPIO[nomeItem].valor;
+			} else {
+				valor = +EXTRAS[nomeItem].valor;
+			}
 			total += Number(valor * qntItem);
 		});
-		itensExtras.forEach((qntItem, nomeItem) => {
-			const valor = +EXTRAS[nomeItem].valor;
-			total += Number(valor * qntItem);
-		});
-
-		return [total, itensPrincipais, itensExtras];
+		return total;
 	}
 
 	computaTaxasEDescontos(total, metodoPagamento) {
