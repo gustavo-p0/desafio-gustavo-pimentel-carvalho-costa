@@ -5,19 +5,11 @@ import FORMAS_DE_PAGAMENTO from './formas-de-pagamento';
 import MENSAGENS_DE_ERRO from './mensagens';
 
 class CaixaDaLanchonete {
-	#total = 0;
-	#itensPrincipais = new Map();
-	#itensExtras = new Map();
-
-	set total(valor) {
-		this.#total += valor;
-	}
-
-	get total() {
-		return this.#total;
-	}
-
 	calcularValorDaCompra(metodoDePagamento, itens) {
+		let total = 0;
+		let itensPrincipais = new Map();
+		let itensExtras = new Map();
+
 		const isSacolaVazia = itens.length === 0;
 		if (isSacolaVazia) {
 			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
@@ -31,16 +23,16 @@ class CaixaDaLanchonete {
 
 		for (let item of itens) {
 			const [nomeItem = null, qntItem = null] = item.split(',');
-			const isItemNoCardapio = CARDAPIO[nomeItem];
+			const isItemPrincipal = CARDAPIO[nomeItem];
 			const isItemExtra = EXTRAS[nomeItem];
-			if (isItemNoCardapio) {
-				this.#itensPrincipais.set(nomeItem, +qntItem);
+			if (isItemPrincipal) {
+				itensPrincipais.set(nomeItem, +qntItem);
 			} else if (isItemExtra) {
 				const itemAssociadoAoExtra = EXTRAS[nomeItem].itemPrincipal;
-				const isItemAssociadoPedido =
-					this.#itensPrincipais.has(itemAssociadoAoExtra);
-				if (isItemAssociadoPedido) {
-					this.#itensExtras.set(nomeItem, +qntItem);
+				const isItemAssociadoJaPedido =
+					itensPrincipais.has(itemAssociadoAoExtra);
+				if (isItemAssociadoJaPedido) {
+					itensExtras.set(nomeItem, +qntItem);
 				} else {
 					return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 				}
@@ -53,36 +45,44 @@ class CaixaDaLanchonete {
 			}
 		}
 
-		this.somaValores();
-		this.computaTaxasEDescontos(metodoPagamento);
-		return this.converteValorTotalEmMoeda('BRL');
+		[total, itensPrincipais, itensExtras] = this.somaValores(
+			itensPrincipais,
+			itensExtras
+		);
+		total = this.computaTaxasEDescontos(total, metodoPagamento);
+		return this.converteValorTotalEmMoeda(total, 'BRL');
 	}
 
-	somaValores() {
-		this.#itensPrincipais.forEach((qntItem, nomeItem) => {
+	somaValores(itensPrincipais, itensExtras) {
+		let total = 0;
+		itensPrincipais.forEach((qntItem, nomeItem) => {
 			const valor = +CARDAPIO[nomeItem].valor;
-			this.#total += Number(valor * qntItem);
+			total += Number(valor * qntItem);
 		});
-		this.#itensExtras.forEach((qntItem, nomeItem) => {
+		itensExtras.forEach((qntItem, nomeItem) => {
 			const valor = +EXTRAS[nomeItem].valor;
-			this.#total += Number(valor * qntItem);
+			total += Number(valor * qntItem);
 		});
+
+		return [total, itensPrincipais, itensExtras];
 	}
 
-	computaTaxasEDescontos(metodoPagamento) {
+	computaTaxasEDescontos(total, metodoPagamento) {
+		let newTotal = total;
 		switch (metodoPagamento) {
 			case FORMAS_DE_PAGAMENTO.credito:
-				this.#total = this.#total * (1 + TAXAS[FORMAS_DE_PAGAMENTO.credito]);
+				newTotal = total * (1 + TAXAS[FORMAS_DE_PAGAMENTO.credito]);
 				break;
 			case FORMAS_DE_PAGAMENTO.dinheiro:
-				this.#total =
-					this.#total * (1 - DESCONTOS[FORMAS_DE_PAGAMENTO.dinheiro]);
+				newTotal = total * (1 - DESCONTOS[FORMAS_DE_PAGAMENTO.dinheiro]);
 				break;
 		}
+
+		return newTotal;
 	}
 
-	converteValorTotalEmMoeda(currency) {
-		return Number(this.#total.toPrecision(4)).toLocaleString('pt-BR', {
+	converteValorTotalEmMoeda(total, currency) {
+		return Number(total.toPrecision(4)).toLocaleString('pt-BR', {
 			style: 'currency',
 			currency: `${currency}`,
 		});
