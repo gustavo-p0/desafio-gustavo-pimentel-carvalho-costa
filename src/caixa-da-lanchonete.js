@@ -6,17 +6,18 @@ import MENSAGENS_DE_ERRO from './mensagens';
 
 class CaixaDaLanchonete {
 	#total = 0;
+	#itensPrincipais = new Map();
+	#itensExtras = new Map();
 
 	set total(valor) {
 		this.#total += valor;
 	}
+
 	get total() {
 		return this.#total;
 	}
 
 	calcularValorDaCompra(metodoDePagamento, itens) {
-		const itensPrincipais = new Map();
-		const itensExtras = new Map();
 		const isSacolaVazia = itens.length === 0;
 		if (isSacolaVazia) {
 			return MENSAGENS_DE_ERRO.CARRINHO_VAZIO;
@@ -30,14 +31,17 @@ class CaixaDaLanchonete {
 
 		for (let item of itens) {
 			const [nomeItem = null, qntItem = null] = item.split(',');
-			if (CARDAPIO[nomeItem]) {
-				itensPrincipais.set(nomeItem, +qntItem);
-			} else if (EXTRAS[nomeItem]) {
-				const itemAssociado = EXTRAS[nomeItem].itemPrincipal;
-				if (itensPrincipais.has(itemAssociado)) {
-					itensExtras.set(nomeItem, +qntItem);
+			const isItemNoCardapio = CARDAPIO[nomeItem];
+			const isItemExtra = EXTRAS[nomeItem];
+			if (isItemNoCardapio) {
+				this.#itensPrincipais.set(nomeItem, +qntItem);
+			} else if (isItemExtra) {
+				const itemAssociadoAoExtra = EXTRAS[nomeItem].itemPrincipal;
+				const isItemAssociadoPedido =
+					this.#itensPrincipais.has(itemAssociadoAoExtra);
+				if (isItemAssociadoPedido) {
+					this.#itensExtras.set(nomeItem, +qntItem);
 				} else {
-					console.log(nomeItem, itemAssociado, EXTRAS[nomeItem]);
 					return MENSAGENS_DE_ERRO.ITEM_PRINCIPAL_INEXISTENTE;
 				}
 			} else {
@@ -49,17 +53,17 @@ class CaixaDaLanchonete {
 			}
 		}
 
-		this.somaValores(itensPrincipais, itensExtras);
+		this.somaValores();
 		this.computaTaxasEDescontos(metodoPagamento);
 		return this.converteValorTotalEmMoeda('BRL');
 	}
 
-	somaValores(itensPrincipais, itensExtras) {
-		itensPrincipais.forEach((qntItem, nomeItem) => {
+	somaValores() {
+		this.#itensPrincipais.forEach((qntItem, nomeItem) => {
 			const valor = +CARDAPIO[nomeItem].valor;
 			this.#total += Number(valor * qntItem);
 		});
-		itensExtras.forEach((qntItem, nomeItem) => {
+		this.#itensExtras.forEach((qntItem, nomeItem) => {
 			const valor = +EXTRAS[nomeItem].valor;
 			this.#total += Number(valor * qntItem);
 		});
@@ -68,10 +72,11 @@ class CaixaDaLanchonete {
 	computaTaxasEDescontos(metodoPagamento) {
 		switch (metodoPagamento) {
 			case FORMAS_DE_PAGAMENTO.credito:
-				this.#total = this.#total * (1 + TAXAS[metodoPagamento]);
+				this.#total = this.#total * (1 + TAXAS[FORMAS_DE_PAGAMENTO.credito]);
 				break;
 			case FORMAS_DE_PAGAMENTO.dinheiro:
-				this.#total = this.#total * (1 - DESCONTOS[metodoPagamento]);
+				this.#total =
+					this.#total * (1 - DESCONTOS[FORMAS_DE_PAGAMENTO.dinheiro]);
 				break;
 		}
 	}
