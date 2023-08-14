@@ -56,9 +56,10 @@ class CaixaDaLanchonete {
 
 	#parseItemPedido(item) {
 		if (typeof item !== 'string') {
+			console.log('a');
 			throw new Error(MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE);
 		}
-		const splittedItem = item.split(',');
+		const splittedItem = item.trim().split(' ').join('').split(',');
 		if (splittedItem.length !== 2) {
 			throw new Error(MENSAGENS_DE_ERRO.CODIGO_INEXISTENTE);
 		}
