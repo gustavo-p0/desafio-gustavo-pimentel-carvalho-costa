@@ -43,6 +43,7 @@ describe('CaixaDaLanchonete', () => {
 		['credito', 'R$ 11,85', ['cafe,1', 'sanduiche,1', 'queijo,1']],
 		['debito', 'R$ 11,50', ['cafe,1', 'sanduiche,1', 'queijo,1']],
 		['debito', 'R$ 17,00', ['combo1,1', 'combo2,1']],
+		['credito', 'R$ 30,90', ['combo1 , 1', 'combo2 , 1', 'sanduiche, 2']],
 	])('compra de 3 itens em %p deve resultar em %p', validaTeste);
 
 	test.each([
@@ -53,6 +54,22 @@ describe('CaixaDaLanchonete', () => {
 			'debito',
 			'R$ 40,50',
 			['cafe,4', 'sanduiche,3', 'queijo,2', 'cafe,1', 'queijo,1'],
+		],
+		[
+			'debito',
+			'R$ 142,40',
+			[
+				'cafe,5',
+				'sanduiche,2',
+				'queijo,1',
+				'suco,1',
+				'queijo,1',
+				'suco,1',
+				'salgado,4',
+				'combo1,3',
+				'combo2,4',
+				'chantily,7',
+			],
 		],
 	])('compra de múltiplas quantidades em %p deve resultar em %p', validaTeste);
 
@@ -92,6 +109,18 @@ describe('CaixaDaLanchonete', () => {
 			'credito',
 			'Item extra não pode ser pedido sem o principal',
 			['chantily,1', 'sanduiche,1'],
+		],
+		[
+			'chantily sem cafe',
+			'credito',
+			'Quantidade inválida!',
+			['cafe,0', 'chantily,1'],
+		],
+		[
+			'queijo sem sanduiche',
+			'credito',
+			'Quantidade inválida!',
+			['sanduiche,0', 'queijo, 3'],
 		],
 		[
 			'queijo com outro item',
